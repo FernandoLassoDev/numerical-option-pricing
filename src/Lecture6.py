@@ -41,6 +41,8 @@ def brownian_motion(T, N, vol, seed = 123, origin = 0):
 
         
     pd.DataFrame({'Wiener': wiener, 'General Wiener': gwiener, 'Trend': trend}).plot()
+    plt.title('Regular vs generalized Brownian Motion')
+    plt.show()
 
 
 # Montecarlo
@@ -70,6 +72,8 @@ class montecarlo(object):
 
             montecarlo.append(values)
             plt.plot(values)
+            plt.title('Plot montecarlo simulation paths')
+            plt.show
 
         plt.show() 
 
@@ -79,6 +83,7 @@ class montecarlo(object):
         unexpected = self.vol * norm.rvs(size=n_sim) * np.sqrt(self.T)
         x = origin * np.exp(expected + unexpected)
         plt.hist(x, bins='auto')
+        plt.title('Possible stock value outcomes')
         plt.show
 
     def present_value(self, origin, K, call = True, n_sim = 50000):
