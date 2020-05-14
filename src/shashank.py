@@ -10,8 +10,10 @@ from github.option_pricing.american_option_pricing import AmericanOptionPricing
 #    return out
 
 # Compute value of call options according to monte carlo method
-def price_american_options(options, stocks):
+def price_american_options(options, stocks, verbose = True):
     count = 0
+    own_vol_calc = []
+    implied_calc = []
     for row in options:
         count = count +1
         row = row[1]
@@ -32,11 +34,20 @@ def price_american_options(options, stocks):
         a.risk_free_rate = rf
         cp = 0 if row['cp_flag'] == "C" else 1
       
-        print("\n------------------------------------------------------------------------------------------")
-        print("{i}: {ticker} {cp} with strike {K} and days to maturity {T} with spot {S} at {date}".format(
-            i = count, ticker = ticker, cp = "call" if cp ==0 else "put", K = K, T=T, S = round(S,2),date = row['date']))
-        print("------------------------------------------------------------------------------------------")
-        print("With calculated vol of {vol} :  {c}".format(vol = round(a.volatility,3), c = round(a.calculate_option_prices()[cp],2)))
+        
+        ov = a.calculate_option_prices()[cp]
+        own_vol_calc.append(ov)
         a.volatility = row['impl_volatility']
-        print("With an implied vol of {vol} :  {c}".format(vol = round(a.volatility,3), c = round(a.calculate_option_prices()[cp],2)))
-        print("Actual observed call midpoint:  " + str(round(row['midpoint'],2)))
+        iv = a.calculate_option_prices()[cp]
+        implied_calc.append(iv)
+        
+        if verbose:
+            print("\n------------------------------------------------------------------------------------------")
+            print("{i}: {ticker} {cp} with strike {K} and days to maturity {T} with spot {S} at {date}".format(
+            i = count, ticker = ticker, cp = "call" if cp ==0 else "put", K = K, T=T, S = round(S,2),date = row['date']))
+            print("------------------------------------------------------------------------------------------")
+            print("With calculated vol of {vol} :  {c}".format(vol = round(a.volatility,3), c = round(ov,2)))
+            print("With an implied vol of {vol} :  {c}".format(vol = round(a.volatility,3), c = round(iv,2)))
+            print("Actual observed call midpoint:  " + str(round(row['midpoint'],2)))
+            
+    return own_vol_calc, implied_calc

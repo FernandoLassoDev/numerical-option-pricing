@@ -20,11 +20,13 @@ def split_data(df, volatility, y, normalize = True, test_split = 0.8):
         df["Price"] = df["Price"]/df["strike_price"]
         df["midpoint"] = df["midpoint"]/df["strike_price"]
         df["T"] = df["T"] / 365
+    df['cp'] = 1
+    df['cp'][df.cp_flag == "C"] =0
     n = len(df)
     n_train =  (int)(test_split * n)
     train = df[0:n_train]
     train_attributes = train[['cp_flag','ticker']]
-    cols = ['Price', 'T', 'q', volatility, 'rf']
+    cols = ['Price', 'T', 'q', volatility, 'rf','cp']
     X_train = train[cols].values
     y_train = train[y].values
     test = df[n_train+1:n]
@@ -38,7 +40,7 @@ def split_data(df, volatility, y, normalize = True, test_split = 0.8):
 def custom_activation(x):
     return backend.exp(x)
 
-def create_neural_network(X_train, nodes = 120):
+def create_neural_network(X_train, nodes = 120,save = True):
 
     model = Sequential()
 
@@ -59,7 +61,7 @@ def create_neural_network(X_train, nodes = 120):
     model.add(Activation(custom_activation))
               
     model.compile(loss='mse',optimizer='rmsprop')
-    plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
+    if save: plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
     return model 
 
 def checkAccuracy(y,y_hat, attributes, plot = True):
