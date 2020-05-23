@@ -3,6 +3,7 @@ import pandas as pd
 from math import exp
 import matplotlib.pyplot as plt
 import random
+import seaborn as sns
 
 def plot_strike_price(data, ticker, flag):
 	s = data.loc[(data.ticker == ticker) & (data.cp_flag == flag),["date", "strike_price","Price","midpoint"]]
@@ -85,3 +86,33 @@ def load_data(plot = True):
 		print(options.head())
 
 	return options, stocks
+
+def plot_prediction_error(df, x_var = "Actual", y_var = "Predicted"):
+	g = sns.pairplot(df, x_vars=[x_var], y_vars=[y_var], 
+		hue="Ticker", height=5, aspect=2, plot_kws={'alpha':0.5})
+	g.fig.suptitle("Predicted vs Actual prices")
+	plt.show()
+
+def plot_error_dist(diffcol, tickercol):
+	sns.set(rc={"figure.figsize": (12, 6)})
+	for t in ["WMT","AAPL","JPM","DIS"]:
+		sns.distplot(diffcol[tickercol==t]).set_title("Prediction difference")
+
+
+def write_errors(title, differences, actual):
+	stats = dict()
+	print("----------------------------------")
+	print(title)
+	print("----------------------------------")
+	stats['mse'] = np.mean(differences**2)
+	print("Mean Squared Error:      ", stats['mse'])
+
+	stats['rmse'] = np.sqrt(stats['mse'])
+	print("Root Mean Squared Error: ", stats['rmse'])
+
+	stats['mae'] = np.mean(abs(differences))
+	print("Mean Absolute Error:     ", stats['mae'])
+
+	stats['mpe'] = np.sqrt(stats['mse'])/np.mean(actual)
+	print("Mean Percent Error:      ", stats['mpe'])
+	print("")

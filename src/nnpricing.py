@@ -10,6 +10,7 @@ from keras.utils.vis_utils import plot_model
 import seaborn as sns
 import matplotlib as mpl
 from arch import arch_model
+from visualizations import plot_prediction_error, plot_error_dist
 import sys 
 
 
@@ -22,15 +23,19 @@ def split_data(df, volatility, y, normalize = True, test_split = 0.8):
         df["T"] = df["T"] / 365
     df['cp'] = 1
     df['cp'][df.cp_flag == "C"] =0
+
+    tickers = pd.get_dummies(df['ticker'], prefix='Ticker_')
+    df = pd.concat([df, tickers], axis = 1)
+
     n = len(df)
     n_train =  (int)(test_split * n)
     train = df[0:n_train]
-    train_attributes = train[['cp_flag','ticker']]
+    train_attributes = train[['cp_flag','ticker','strike_price']]
     cols = ['Price', 'T', 'q', volatility, 'rf','cp']
     X_train = train[cols].values
     y_train = train[y].values
     test = df[n_train+1:n]
-    test_attributes = test[['cp_flag','ticker']]
+    test_attributes = test[['cp_flag','ticker','strike_price']]
     X_test = test[cols].values
     y_test = test[y].values
     
@@ -67,15 +72,27 @@ def create_neural_network(X_train, nodes = 120,save = True):
 def checkAccuracy(y,y_hat, attributes, plot = True):
     stats = dict()
     
-    stats['diff'] = y - y_hat
-    
-    stats['mse'] = np.mean(stats['diff']**2)
+    # Undo normalization
+    y = y * attributes['strike_price']
+    y_hat = y_hat * attributes['strike_price']
+
+    stats['diff_pct'] = (y - y_hat)/y
+    stats['diff_pct'].name = "Percentage Error"
+    # Remove exterme outliers (4 std away)
+    remove_idx = np.abs(stats['diff_pct'])> (4*np.std(stats['diff_pct']))
+    print("Removed {0} percent extreme outliers".format(round(sum(remove_idx)/len(stats['diff_pct']),2)))
+
+    stats['diff_pct'] = stats['diff_pct'][~remove_idx]
+    y = y[~remove_idx]
+    y_hat = y_hat[~remove_idx]
+
+    stats['mse'] = np.mean(stats['diff_pct']**2)
     print("Mean Squared Error:      ", stats['mse'])
     
     stats['rmse'] = np.sqrt(stats['mse'])
     print("Root Mean Squared Error: ", stats['rmse'])
     
-    stats['mae'] = np.mean(abs(stats['diff']))
+    stats['mae'] = np.mean(abs(stats['diff_pct']))
     print("Mean Absolute Error:     ", stats['mae'])
     
     stats['mpe'] = np.sqrt(stats['mse'])/np.mean(y)
@@ -85,24 +102,9 @@ def checkAccuracy(y,y_hat, attributes, plot = True):
         #plots
         data = pd.DataFrame({"Actual":y, "Predicted":y_hat,
             "Ticker":attributes['ticker'], "CP Flag":attributes['cp_flag']})
-      #  mpl.rcParams['agg.path.chunksize'] = 100000
-      #  plt.figure(figsize=(14,10))
-      #  plt.scatter(y, y_hat,color='black',linewidth=0.3,alpha=0.4, s=0.5)
-      #  plt.xlabel('Actual Price',fontsize=20,fontname='Times New Roman')
-      #  plt.ylabel('Predicted Price',fontsize=20,fontname='Times New Roman') 
-      #  plt.show()
 
-        g = sns.pairplot(data, x_vars=["Actual"], y_vars=["Predicted"], 
-             hue="Ticker", height=5, aspect=1.3, plot_kws={'alpha':0.5})
-        g.fig.suptitle("Predicted vs Actual prices")
-        
-        plt.show()
-        #g.fig.set_size_inches(40,20)
-        sns.set(rc={"figure.figsize": (12, 6)})
-        for t in ["WMT","AAPL","JPM","DIS"]:
-            sns.distplot(stats['diff'][attributes['ticker']==t]).set_title("Prediction difference")
-
-        plt.show()
+        plot_prediction_error(data)
+        plot_error_dist(stats['diff_pct'],attributes['ticker'])
     
     return stats
 
