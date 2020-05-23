@@ -76,33 +76,36 @@ def checkAccuracy(y,y_hat, attributes, plot = True):
     y = y * attributes['strike_price']
     y_hat = y_hat * attributes['strike_price']
 
-    stats['diff_pct'] = (y - y_hat)/y
+    stats['diff'] = (y - y_hat)
+    stats['diff_pct'] = 100 * (y - y_hat) / y
     stats['diff_pct'].name = "Percentage Error"
-    # Remove exterme outliers (4 std away)
-    remove_idx = np.abs(stats['diff_pct'])> (4*np.std(stats['diff_pct']))
-    print("Removed {0} percent extreme outliers".format(round(sum(remove_idx)/len(stats['diff_pct']),2)))
-
+    
+    # Remove outliers (3 std away)
+    remove_idx = np.abs(stats['diff_pct'])> (3*np.std(stats['diff_pct']))
+    print("Removed {0} percent outliers".format(round(100*sum(remove_idx)/len(stats['diff_pct']),2)))
+    
+    stats['diff'] = stats['diff'][~remove_idx]
     stats['diff_pct'] = stats['diff_pct'][~remove_idx]
     y = y[~remove_idx]
     y_hat = y_hat[~remove_idx]
 
-    stats['mse'] = np.mean(stats['diff_pct']**2)
+    stats['mse'] = np.mean(stats['diff']**2)
     print("Mean Squared Error:      ", stats['mse'])
     
     stats['rmse'] = np.sqrt(stats['mse'])
     print("Root Mean Squared Error: ", stats['rmse'])
     
-    stats['mae'] = np.mean(abs(stats['diff_pct']))
+    stats['mae'] = np.mean(abs(stats['diff']))
     print("Mean Absolute Error:     ", stats['mae'])
     
-    stats['mpe'] = np.sqrt(stats['mse'])/np.mean(y)
+    stats['mpe'] = 100*np.sqrt(stats['mse'])/np.mean(y)
     print("Mean Percent Error:      ", stats['mpe'])
     
     if plot:
         #plots
         data = pd.DataFrame({"Actual":y, "Predicted":y_hat,
             "Ticker":attributes['ticker'], "CP Flag":attributes['cp_flag']})
-
+            
         plot_prediction_error(data)
         plot_error_dist(stats['diff_pct'],attributes['ticker'])
     

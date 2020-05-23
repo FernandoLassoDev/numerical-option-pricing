@@ -96,7 +96,7 @@ def plot_prediction_error(df, x_var = "Actual", y_var = "Predicted"):
 def plot_error_dist(diffcol, tickercol):
 	sns.set(rc={"figure.figsize": (12, 6)})
 	for t in ["WMT","AAPL","JPM","DIS"]:
-		sns.distplot(diffcol[tickercol==t]).set_title("Prediction difference")
+		sns.distplot(diffcol[tickercol==t]).set_title("% difference distribution")
 
 
 def write_errors(title, differences, actual):
@@ -113,6 +113,6 @@ def write_errors(title, differences, actual):
 	stats['mae'] = np.mean(abs(differences))
 	print("Mean Absolute Error:     ", stats['mae'])
 
-	stats['mpe'] = np.sqrt(stats['mse'])/np.mean(actual)
+	stats['mpe'] = 100 *np.sqrt(stats['mse'])/np.mean(actual)
 	print("Mean Percent Error:      ", stats['mpe'])
 	print("")
