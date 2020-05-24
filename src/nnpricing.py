@@ -12,7 +12,7 @@ import matplotlib as mpl
 from arch import arch_model
 from visualizations import plot_prediction_error, plot_error_dist
 import sys 
-
+from sklearn.model_selection import train_test_split
 
 def split_data(df, volatility, y, normalize = True, test_split = 0.8):
     if normalize:
@@ -24,18 +24,19 @@ def split_data(df, volatility, y, normalize = True, test_split = 0.8):
     df['cp'] = 1
     df['cp'][df.cp_flag == "C"] =0
 
-    tickers = pd.get_dummies(df['ticker'], prefix='Ticker_')
+    tickers = pd.get_dummies(df['ticker'], prefix='Ticker')
     df = pd.concat([df, tickers], axis = 1)
-
-    n = len(df)
-    n_train =  (int)(test_split * n)
-    train = df[0:n_train]
+    
+    train, test = train_test_split(df, test_size=0.2)
     train_attributes = train[['cp_flag','ticker','strike_price']]
-    cols = ['Price', 'T', 'q', volatility, 'rf','cp']
+    test_attributes = test[['cp_flag','ticker','strike_price']]
+    
+    cols = ['Price', 'T', 'q', volatility, 'rf','cp',
+            'Ticker_AAPL','Ticker_DIS','Ticker_JPM','Ticker_WMT']
+    
     X_train = train[cols].values
     y_train = train[y].values
-    test = df[n_train+1:n]
-    test_attributes = test[['cp_flag','ticker','strike_price']]
+    
     X_test = test[cols].values
     y_test = test[y].values
     
